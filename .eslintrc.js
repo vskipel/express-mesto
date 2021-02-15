@@ -6,7 +6,7 @@ module.exports = {
     node: true,
   },
   extends: [
-    "airbnb-base"
+    'airbnb-base',
   ],
   parserOptions: {
     ecmaFeatures: {
@@ -15,6 +15,6 @@ module.exports = {
     ecmaVersion: 12,
   },
   rules: {
-    "no-underscore-dangle": 0
+    'no-underscore-dangle': 0,
   },
 };

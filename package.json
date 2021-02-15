@@ -1,14 +1,14 @@
 {
   "name": "mesto-backend",
   "version": "1.0.0",
-  "description": "",
-  "main": "index.js",
+  "description": "Project 12, Express",
+  "main": "app.js",
   "scripts": {
     "start": "node app.js",
     "dev": "nodemon app.js"
   },
   "keywords": [],
-  "author": "",
+  "author": "Anton Khomchenko",
   "license": "ISC",
   "dependencies": {
     "express": "^4.17.1"

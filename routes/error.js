@@ -1,9 +1,6 @@
 const router = require('express').Router();
-const getError = require('../controllers/error')
+const getError = require('../controllers/error');
 
-router.get('*', getError)
-router.post('*', getError)
+router.all('*', getError);
 
 module.exports = router;
-
-
