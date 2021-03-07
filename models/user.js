@@ -16,13 +16,11 @@ const userSchema = new mongoose.Schema({
   avatar: {
     type: String,
     validate: {
-      validator: (avatar) => {
-        return /(http|https):\/\/(\w+:{0,1}\w*@)?(\S+)(:[0-9]+)?(\/|\/([\w#!:.?+=&%@!\-\/]))?/.test(avatar)
-      },
-      message: props => `${props.value} — некорректная ссылка`
+      validator: (avatar) => /(http|https):\/\/(\w+:{0,1}\w*@)?(\S+)(:[0-9]+)?(\/|\/([\w#!:.?+=&%@!]))?/.test(avatar),
+      message: (props) => `${props.value} — некорректная ссылка`,
     },
     required: true,
   },
 });
 
-module.exports = mongoose.model('user', userSchema)
+module.exports = mongoose.model('user', userSchema);
