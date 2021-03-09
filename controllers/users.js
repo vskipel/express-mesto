@@ -1,28 +1,44 @@
 const User = require('../models/user.js');
 
+class NoUserError extends Error {
+  constructor(name, message) {
+    super(message);
+    this.name = name;
+  }
+}
+
 const getUsers = (req, res) => (
   User.find({})
-  .then((users) => res.status(200).send(users))
-  .catch((err) => res.status(500).send({
-    message: err,
-  }))
+    .then((users) => res.status(200).send(users))
+    .catch((err) => res.status(500).send({
+      message: err,
+    }))
 );
 
 const getProfile = (req, res) => (
   User.findOne({
     _id: req.params.userId,
   })
-  .then((user) => {
-    if (!user) {
-      return res.status(404).send({
-        message: 'Нет пользователя с таким id',
+    .then((user) => {
+      if (!user) {
+        throw new NoUserError('userNotFound', 'Нет пользователя с таким id');
+      }
+      return res.status(200).send(user);
+    })
+    .catch((err) => {
+      if (err.name === 'CastError') {
+        res.status(400).send({
+          message: `Введены некорректные данные — ${err.message}`,
+        });
+      } else if (err.name === 'userNotFound') {
+        res.status(404).send({
+          message: `Ошибка — ${err.message}`,
+        });
+      }
+      res.status(500).send({
+        message: err.message,
       });
-    }
-    return res.status(200).send(user);
-  })
-  .catch((err) => res.status(500).send({
-    message: err.message,
-  }))
+    })
 );
 
 const createUser = (req, res) => {
@@ -32,42 +48,15 @@ const createUser = (req, res) => {
     avatar,
   } = req.body; // получим из объекта запроса имя, описание и аватар пользователя
   User.create({
-      name,
-      about,
-      avatar,
-    })
-    .then((user) => res.send({
-      data: user,
-    }))
+    name,
+    about,
+    avatar,
+  })
+    .then((user) => res.status(200).send(user))
     .catch((err) => {
       if (err.name === 'ValidationError') {
-        if (err.errors.name.kind === 'minlength') {
-          res.status(400).send({
-            message: 'Слишком короткое имя. Длина имени должна быть от 2 до 30 символов',
-          });
-        } else if ((err.errors.name.kind === 'maxlength')) {
-          res.status(400).send({
-            message: 'Слишком длинное имя. Длина имени должна быть от 2 до 30 символов',
-          });
-        } else if ((err.errors.about.kind === 'minlength')) {
-          res.status(400).send({
-            message: 'Слишком короткое описание. Длина описания должна быть от 2 до 30 символов',
-          });
-        } else if ((err.errors.about.kind === 'maxlength')) {
-          res.status(400).send({
-            message: 'Слишком длинное описание. Длина описания должна быть от 2 до 30 символов',
-          });
-        } else if ((err.errors.avatar)) {
-          res.status(400).send({
-            message: err.errors.avatar.message,
-          });
-        } else {
-          res.status(400).send({
-            message: 'Неправильные данные',
-          });
-        }
         res.status(400).send({
-          message: 'Неправильные данные',
+          message: `Ошибка валидации данных — ${err.message}`,
         });
       }
       res.status(500).send({
@@ -82,53 +71,30 @@ const updateProfile = (req, res) => {
     about,
   } = req.body; // получим из объекта запроса имя, описание и аватар пользователя
   User.findByIdAndUpdate(req.user._id, {
-      name,
-      about,
-    }, {
-      new: true, // обработчик then получит на вход обновлённую запись
-      runValidators: true, // данные будут валидированы перед изменением
-    })
+    name,
+    about,
+  }, {
+    new: true, // обработчик then получит на вход обновлённую запись
+    runValidators: true, // данные будут валидированы перед изменением
+  })
     .then((user) => {
       if (!user) {
-        return res.status(404).send({
-          message: 'Нет пользователя с таким id',
-        });
+        throw new NoUserError('userNotFound', 'Нет пользователя с таким id');
       }
       return res.status(200).send(user);
     })
     .catch((err) => {
-      if (err.message && ~err.message.indexOf('Cast to ObjectId failed')) {
+      if (err.name === 'ValidationError') {
         res.status(400).send({
-          message: `Введены некорректные данные — ${err.message}`,
-        })
-      } else if (err.name === 'ValidationError') {
-        if (err.errors.name.kind === 'minlength') {
-          res.status(400).send({
-            message: 'Слишком короткое имя. Длина имени должна быть от 2 до 30 символов',
-          });
-        } else if ((err.errors.name.kind === 'maxlength')) {
-          res.status(400).send({
-            message: 'Слишком длинное имя. Длина имени должна быть от 2 до 30 символов',
-          });
-        } else if ((err.errors.about.kind === 'minlength')) {
-          res.status(400).send({
-            message: 'Слишком короткое описание. Длина описания должна быть от 2 до 30 символов',
-          });
-        } else if ((err.errors.about.kind === 'maxlength')) {
-          res.status(400).send({
-            message: 'Слишком длинное описание. Длина описания должна быть от 2 до 30 символов',
-          });
-        } else {
-          res.status(400).send({
-            message: 'Неправильные данные',
-          });
-        }
-        res.status(400).send({
-          message: 'Неправильные данные',
+          message: `Ошибка валидации данных — ${err.message}`,
+        });
+      } else if (err.name === 'userNotFound') {
+        res.status(404).send({
+          message: `Ошибка — ${err.message}`,
         });
       }
       res.status(500).send({
-        message: 'Произошла ошибка',
+        message: `Произошла ошибка — ${err.message}`,
       });
     });
 };
@@ -138,27 +104,29 @@ const updateAvatar = (req, res) => {
     avatar,
   } = req.body;
   User.findByIdAndUpdate(req.user._id, {
-      avatar,
-    }, {
-      new: true,
-      runValidators: true,
-    })
+    avatar,
+  }, {
+    new: true,
+    runValidators: true,
+  })
     .then((user) => {
       if (!user) {
-        return res.status(404).send({
-          message: 'Нет пользователя с таким id',
-        });
+        throw new NoUserError('userNotFound', 'Нет пользователя с таким id');
       }
       return res.status(200).send(user);
     })
     .catch((err) => {
-      if (err.message && ~err.message.indexOf('Cast to ObjectId failed')) {
+      if (err.name === 'CastError') {
         res.status(400).send({
           message: `Введены некорректные данные — ${err.message}`,
-        })
+        });
+      } else if (err.name === 'userNotFound') {
+        res.status(404).send({
+          message: `Ошибка — ${err.message}`,
+        });
       }
       res.status(500).send({
-        message: 'Произошла ошибка',
+        message: `Произошла ошибка — ${err.message}`,
       });
     });
 };
